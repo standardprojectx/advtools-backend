@@ -6,12 +6,18 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });  // Configura o multer para salvar arquivos na pasta 'uploads/'
+const upload = multer({ dest: 'uploads/' });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Endpoint para conversão de arquivos
+
+app.get('/', (req, res) => {
+    res.json({ message: 'Hello World AdvTools Backend' });
+  });
+
+
 app.post('/convert', upload.array('files'), async (req, res) => {
   const files = req.files;
   const conversionType = req.body.conversionType;
