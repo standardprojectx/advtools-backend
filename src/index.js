@@ -16,6 +16,11 @@ app.get('/', (req, res) => {
     res.json({ message: 'Hello World AdvTools Backend' });
   });
 
+  app.get('/home', (req, res) => {
+    res.json({ message: 'Hello World AdvTools Backend Homeee' });
+  });
+
+
 
 app.post('/convert', upload.array('files'), async (req, res) => {
   const files = req.files;
