@@ -11,7 +11,6 @@ const upload = multer({ dest: 'uploads/' });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Endpoint para conversão de arquivos
 
 app.get('/', (req, res) => {
     res.json({ message: 'Hello World AdvTools Backend' });
@@ -130,7 +129,7 @@ const handlePdfOperations = async (files, conversionType, res) => {
   }
 };
 
-app.listen(3001, () => {
-  console.log('Servidor rodando na porta 3001');
+app.listen(4000, () => {
+  console.log('Servidor rodando na porta 4000');
 });
 
