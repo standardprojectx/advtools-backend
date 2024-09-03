@@ -5,25 +5,22 @@ const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-
 app.get('/', (req, res) => {
-    res.json({ message: 'Hello World AdvTools Backend' });
-  });
+  res.json({ message: 'Hello World AdvTools Backend' });
+});
 
-  app.get('/home', (req, res) => {
-    res.json({ message: 'Hello World AdvTools Backend Homeee' });
-  });
-
-
+app.get('/home', (req, res) => {
+  res.json({ message: 'Hello World AdvTools Backend Homeee' });
+});
 
 app.post('/convert', upload.array('files'), async (req, res) => {
   const files = req.files;
@@ -44,6 +41,12 @@ app.post('/convert', upload.array('files'), async (req, res) => {
     res.status(500).send({ message: 'Erro durante a conversão.' });
   }
 });
+
+const generateRandomFileName = (originalName) => {
+  const token = jwt.sign({ data: originalName }, 'secret', { expiresIn: '1h' });
+  const extension = path.extname(originalName);
+  return `${token}${extension}`;
+};
 
 const convertImagesToPdf = async (files, res) => {
   const pdfDoc = await PDFDocument.create();
@@ -68,31 +71,41 @@ const convertImagesToPdf = async (files, res) => {
   }
 
   const pdfBytes = await pdfDoc.save();
-  const outputPath = path.join('/tmp', 'output.pdf'); 
+  const randomFileName = generateRandomFileName('output.pdf');
+  const outputPath = path.join('/tmp', randomFileName);
   fs.writeFileSync(outputPath, pdfBytes);
 
-  res.send({ message: 'Imagens convertidas para PDF com sucesso.', outputPath });
+  res.download(outputPath, randomFileName, (err) => {
+    if (err) {
+      console.error('Erro ao enviar o arquivo:', err);
+      res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
+    }
+    // Limpar arquivos temporários após download
+    fs.unlinkSync(outputPath);
+    files.forEach(file => fs.unlinkSync(file.path));
+  });
 };
 
 const convertAudioVideo = (files, conversionType, res) => {
   const outputFiles = [];
 
   files.forEach(file => {
-    let outputPath;
-    if (conversionType === 'opusToOgg') {
-      outputPath = file.path.replace('.opus', '.ogg');
-    } else if (conversionType === 'webmToOgg') {
-      outputPath = file.path.replace('.webm', '.ogg');
-    } else if (conversionType === 'mp4ToWebm') {
-      outputPath = file.path.replace('.mp4', '.webm');
-    }
+    const randomFileName = generateRandomFileName(file.originalname);
+    const outputPath = path.join('/tmp', randomFileName);
 
     ffmpeg(file.path)
       .toFormat(conversionType.split('To')[1].toLowerCase())
       .on('end', () => {
         outputFiles.push(outputPath);
         if (outputFiles.length === files.length) {
-          res.send({ message: 'Conversão de áudio/vídeo realizada com sucesso.', outputFiles });
+          res.download(outputPath, randomFileName, (err) => {
+            if (err) {
+              console.error('Erro ao enviar o arquivo:', err);
+              res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
+            }
+            fs.unlinkSync(outputPath);
+            files.forEach(file => fs.unlinkSync(file.path));
+          });
         }
       })
       .on('error', (err) => {
@@ -115,9 +128,18 @@ const handlePdfOperations = async (files, conversionType, res) => {
     }
 
     const mergedPdfBytes = await mergedPdf.save();
-    const outputPath = path.join('uploads', 'merged.pdf');
+    const randomFileName = generateRandomFileName('merged.pdf');
+    const outputPath = path.join('/tmp', randomFileName);
     fs.writeFileSync(outputPath, mergedPdfBytes);
-    res.send({ message: 'PDFs unidos com sucesso.', outputPath });
+
+    res.download(outputPath, randomFileName, (err) => {
+      if (err) {
+        console.error('Erro ao enviar o arquivo:', err);
+        res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
+      }
+      fs.unlinkSync(outputPath);
+      files.forEach(file => fs.unlinkSync(file.path));
+    });
   } else if (conversionType === 'splitPdf') {
     const pdfBytes = fs.readFileSync(files[0].path);
     const pdf = await PDFDocument.load(pdfBytes);
@@ -128,16 +150,23 @@ const handlePdfOperations = async (files, conversionType, res) => {
       const [copiedPage] = await singlePagePdf.copyPages(pdf, [i]);
       singlePagePdf.addPage(copiedPage);
       const singlePageBytes = await singlePagePdf.save();
-      const outputPath = path.join('uploads', `page_${i + 1}.pdf`);
+      const randomFileName = generateRandomFileName(`page_${i + 1}.pdf`);
+      const outputPath = path.join('/tmp', randomFileName);
       fs.writeFileSync(outputPath, singlePageBytes);
       outputFiles.push(outputPath);
-    }
 
-    res.send({ message: 'PDF dividido com sucesso.', outputFiles });
+      res.download(outputPath, randomFileName, (err) => {
+        if (err) {
+          console.error('Erro ao enviar o arquivo:', err);
+          res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
+        }
+        fs.unlinkSync(outputPath);
+        files.forEach(file => fs.unlinkSync(file.path));
+      });
+    }
   }
 };
 
 app.listen(4000, () => {
   console.log('Servidor rodando na porta 4000');
 });
-
