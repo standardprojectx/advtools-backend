@@ -6,7 +6,8 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: '/tmp/uploads/' });
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -65,7 +66,7 @@ const convertImagesToPdf = async (files, res) => {
   }
 
   const pdfBytes = await pdfDoc.save();
-  const outputPath = path.join('uploads', 'output.pdf');
+  const outputPath = path.join('/tmp', 'output.pdf'); 
   fs.writeFileSync(outputPath, pdfBytes);
 
   res.send({ message: 'Imagens convertidas para PDF com sucesso.', outputPath });
