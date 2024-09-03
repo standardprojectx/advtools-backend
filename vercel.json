@@ -1,6 +1,18 @@
 {
     "version": 2,
-    "builds": [{ "src": "src/index.js", "use": "@vercel/node" }],
-    "routes": [{ "src": "(.*)", "dest": "src/index.js" }]
+    "builds": [
+      { "src": "src/index.js", "use": "@vercel/node" }
+    ],
+    "routes": [
+      {
+        "src": "(.*)",
+        "dest": "src/index.js",
+        "headers": {
+          "Access-Control-Allow-Origin": "http://localhost:3000",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "X-Requested-With, Content-Type"
+        }
+      }
+    ]
   }
   

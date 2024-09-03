@@ -4,6 +4,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors');
 
 const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
@@ -11,6 +12,7 @@ const upload = multer({ dest: '/tmp/uploads/' });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 
 app.get('/', (req, res) => {
