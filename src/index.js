@@ -4,12 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
 
 const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
-
-const ffmpeg = createFFmpeg({ log: true }); // WebAssembly version of ffmpeg
 
 const corsOptions = {
   origin: '*',
@@ -56,8 +53,12 @@ const generateRandomFileName = (originalName) => {
   return `${token}${extension}`;
 };
 
-// Conversão de áudio/vídeo usando `ffmpeg.wasm`
+// Conversão de áudio/vídeo usando `ffmpeg.wasm` com import dinâmico
 const convertAudioVideo = async (files, conversionType, res) => {
+  const { createFFmpeg, fetchFile } = await import('@ffmpeg/ffmpeg'); // Importação dinâmica do ffmpeg
+
+  const ffmpeg = createFFmpeg({ log: true });
+
   if (!ffmpeg.isLoaded()) {
     await ffmpeg.load();
   }
@@ -92,6 +93,8 @@ const convertAudioVideo = async (files, conversionType, res) => {
 
 // Outras funções de manipulação de PDF
 const convertImagesToPdf = async (files, res) => {
+  const { PDFDocument } = await import('pdf-lib'); // Importação dinâmica do pdf-lib
+
   const pdfDoc = await PDFDocument.create();
   for (const file of files) {
     const imageBytes = fs.readFileSync(file.path);
@@ -128,6 +131,8 @@ const convertImagesToPdf = async (files, res) => {
 };
 
 const handlePdfOperations = async (files, conversionType, res) => {
+  const { PDFDocument } = await import('pdf-lib'); // Importação dinâmica do pdf-lib
+
   if (conversionType === 'mergePdfs') {
     const mergedPdf = await PDFDocument.create();
     for (const file of files) {
