@@ -11,11 +11,12 @@ const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
 ffmpeg.setFfmpegPath({ dest: '/tmp/uploads/ffmpeg' }); 
 
-const corsOptions = {
-  origin: ['https://advtools-frontend.vercel.app'], 
-  methods: ['GET', 'POST'], 
-  allowedHeaders: ['Content-Type'], 
-};
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
+
 
 app.use(cors(corsOptions));
 
