@@ -1,11 +1,14 @@
 const express = require('express');
 const multer = require('multer');
-const ffmpeg = require('fluent-ffmpeg');
+
 const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+
+const spawn = require('cross-spawn');
+const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 
 // Criação da aplicação Express
@@ -15,6 +18,7 @@ const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
 
 ffmpeg.setFfmpegPath(ffmpegPath);
+const process = spawn(ffmpegPath, ['-formats']);
 
 // Configuração do CORS
 const corsOptions = {
