@@ -1,25 +1,32 @@
 const express = require('express');
 const multer = require('multer');
+const ffmpeg = require('fluent-ffmpeg');
+const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
 
 const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
 
-const ffmpeg = createFFmpeg({ log: true }); // WebAssembly version of ffmpeg
+const ffmpegPath = require('ffmpeg-static');
+
+//ffmpeg.setFfmpegPath('/tmp/uploads/ffmpeg'); 
+ffmpeg.setFfmpegPath(ffmpegPath); 
+
 
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
-
 app.use(cors(corsOptions));
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hello World AdvTools Backend' });
@@ -49,50 +56,15 @@ app.post('/convert', upload.array('files'), async (req, res) => {
   }
 });
 
-// Função para gerar nomes de arquivos aleatórios
 const generateRandomFileName = (originalName) => {
   const token = jwt.sign({ data: originalName }, 'secret', { expiresIn: '1h' });
   const extension = path.extname(originalName);
   return `${token}${extension}`;
 };
 
-// Conversão de áudio/vídeo usando `ffmpeg.wasm`
-const convertAudioVideo = async (files, conversionType, res) => {
-  if (!ffmpeg.isLoaded()) {
-    await ffmpeg.load();
-  }
-
-  const inputFile = files[0].path; // Considerando que há um arquivo por vez
-  const fileName = path.basename(inputFile);
-
-  ffmpeg.FS('writeFile', fileName, await fetchFile(files[0].path)); // Lê o arquivo para o fs virtual do ffmpeg
-
-  let outputFile;
-  if (conversionType === 'opusToOgg') {
-    outputFile = 'output.ogg';
-    await ffmpeg.run('-i', fileName, outputFile);
-  } else if (conversionType === 'mp4ToWebm') {
-    outputFile = 'output.webm';
-    await ffmpeg.run('-i', fileName, outputFile);
-  }
-
-  const data = ffmpeg.FS('readFile', outputFile); // Lê o arquivo convertido do fs virtual
-
-  const outputPath = path.join('/tmp', outputFile); // Caminho temporário para salvar o arquivo convertido
-  fs.writeFileSync(outputPath, Buffer.from(data)); // Salva o arquivo convertido no sistema
-
-  res.download(outputPath, outputFile, (err) => {
-    if (err) {
-      console.error('Erro ao enviar o arquivo:', err);
-      res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
-    }
-    fs.unlinkSync(outputPath); // Remove o arquivo após o download
-  });
-};
-
-// Outras funções de manipulação de PDF
 const convertImagesToPdf = async (files, res) => {
   const pdfDoc = await PDFDocument.create();
+
   for (const file of files) {
     const imageBytes = fs.readFileSync(file.path);
     let image;
@@ -122,14 +94,46 @@ const convertImagesToPdf = async (files, res) => {
       console.error('Erro ao enviar o arquivo:', err);
       res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
     }
+    // Limpar arquivos temporários após download
     fs.unlinkSync(outputPath);
     files.forEach(file => fs.unlinkSync(file.path));
+  });
+};
+
+const convertAudioVideo = (files, conversionType, res) => {
+  const outputFiles = [];
+
+  files.forEach(file => {
+    const randomFileName = generateRandomFileName(file.originalname);
+    const outputPath = path.join('/tmp', randomFileName);
+
+    ffmpeg(file.path)
+      .toFormat(conversionType.split('To')[1].toLowerCase())
+      .on('end', () => {
+        outputFiles.push(outputPath);
+        if (outputFiles.length === files.length) {
+          res.download(outputPath, randomFileName, (err) => {
+            if (err) {
+              console.error('Erro ao enviar o arquivo:', err);
+              res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
+            }
+            fs.unlinkSync(outputPath);
+            files.forEach(file => fs.unlinkSync(file.path));
+          });
+        }
+      })
+      .on('error', (err) => {
+        console.error('Erro ao converter arquivo:', err);
+        res.status(500).send({ message: 'Erro ao converter arquivos.' });
+      })
+      .save(outputPath);
   });
 };
 
 const handlePdfOperations = async (files, conversionType, res) => {
   if (conversionType === 'mergePdfs') {
     const mergedPdf = await PDFDocument.create();
+
     for (const file of files) {
       const pdfBytes = fs.readFileSync(file.path);
       const pdf = await PDFDocument.load(pdfBytes);
@@ -177,7 +181,6 @@ const handlePdfOperations = async (files, conversionType, res) => {
   }
 };
 
-// Iniciar o servidor
 app.listen(4000, () => {
   console.log('Servidor rodando na porta 4000');
 });
