@@ -11,13 +11,11 @@ const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
 ffmpeg.setFfmpegPath({ dest: '/tmp/uploads/ffmpeg' }); 
 
-app.use(cors({
-  origin: '*', 
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
-}));
-
-
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
 app.use(cors(corsOptions));
 
 
