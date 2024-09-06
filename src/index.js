@@ -9,7 +9,8 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
-ffmpeg.setFfmpegPath({ dest: '/tmp/uploads/ffmpeg' }); 
+ffmpeg.setFfmpegPath('/tmp/uploads/ffmpeg'); 
+
 
 const corsOptions = {
   origin: '*',
