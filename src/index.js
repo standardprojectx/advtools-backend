@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
+ffmpeg.setFfmpegPath({ dest: '/tmp/uploads/ffmpeg' }); 
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
