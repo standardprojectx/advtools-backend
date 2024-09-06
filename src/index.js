@@ -1,13 +1,22 @@
 const express = require('express');
 const multer = require('multer');
+const ffmpeg = require('fluent-ffmpeg');
+const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const ffmpegPath = require('ffmpeg-static');
 
+// Criação da aplicação Express
 const app = express();
+
+// Configuração do Multer para upload de arquivos
 const upload = multer({ dest: '/tmp/uploads/' });
 
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+// Configuração do CORS
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -18,14 +27,12 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Rota inicial
 app.get('/', (req, res) => {
   res.json({ message: 'Hello World AdvTools Backend' });
 });
 
-app.get('/home', (req, res) => {
-  res.json({ message: 'Hello World AdvTools Backend Homeee' });
-});
-
+// Rota para conversão de arquivos
 app.post('/convert', upload.array('files'), async (req, res) => {
   const files = req.files;
   const conversionType = req.body.conversionType;
@@ -33,9 +40,9 @@ app.post('/convert', upload.array('files'), async (req, res) => {
   try {
     if (conversionType === 'imageToPdf') {
       await convertImagesToPdf(files, res);
-    } else if (conversionType === 'opusToOgg' || conversionType === 'webmToOgg' || conversionType === 'mp4ToWebm') {
+    } else if (['opusToOgg', 'webmToOgg', 'mp4ToWebm'].includes(conversionType)) {
       await convertAudioVideo(files, conversionType, res);
-    } else if (conversionType === 'mergePdfs' || conversionType === 'splitPdf') {
+    } else if (['mergePdfs', 'splitPdf'].includes(conversionType)) {
       await handlePdfOperations(files, conversionType, res);
     } else {
       res.status(400).send({ message: 'Tipo de conversão inválido.' });
@@ -53,49 +60,50 @@ const generateRandomFileName = (originalName) => {
   return `${token}${extension}`;
 };
 
-// Conversão de áudio/vídeo usando `ffmpeg.wasm` com import dinâmico
-const convertAudioVideo = async (files, conversionType, res) => {
-  const { createFFmpeg, fetchFile } = await import('@ffmpeg/ffmpeg'); // Importação dinâmica do ffmpeg
+// Conversão de áudio/vídeo usando fluent-ffmpeg
+const convertAudioVideo = (files, conversionType, res) => {
+  const outputFiles = [];
 
-  const ffmpeg = createFFmpeg({ log: true });
+  files.forEach(file => {
+    const randomFileName = generateRandomFileName(file.originalname);
+    const outputPath = path.join('/tmp', randomFileName);
 
-  if (!ffmpeg.isLoaded()) {
-    await ffmpeg.load();
-  }
-
-  const inputFile = files[0].path; // Considerando que há um arquivo por vez
-  const fileName = path.basename(inputFile);
-
-  ffmpeg.FS('writeFile', fileName, await fetchFile(files[0].path)); // Lê o arquivo para o fs virtual do ffmpeg
-
-  let outputFile;
-  if (conversionType === 'opusToOgg') {
-    outputFile = 'output.ogg';
-    await ffmpeg.run('-i', fileName, outputFile);
-  } else if (conversionType === 'mp4ToWebm') {
-    outputFile = 'output.webm';
-    await ffmpeg.run('-i', fileName, outputFile);
-  }
-
-  const data = ffmpeg.FS('readFile', outputFile); // Lê o arquivo convertido do fs virtual
-
-  const outputPath = path.join('/tmp', outputFile); // Caminho temporário para salvar o arquivo convertido
-  fs.writeFileSync(outputPath, Buffer.from(data)); // Salva o arquivo convertido no sistema
-
-  res.download(outputPath, outputFile, (err) => {
-    if (err) {
-      console.error('Erro ao enviar o arquivo:', err);
-      res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
+    let format;
+    if (conversionType === 'opusToOgg') {
+      format = 'ogg';
+    } else if (conversionType === 'mp4ToWebm') {
+      format = 'webm';
+    } else if (conversionType === 'webmToOgg') {
+      format = 'ogg';
     }
-    fs.unlinkSync(outputPath); // Remove o arquivo após o download
+
+    ffmpeg(file.path)
+      .toFormat(format)
+      .on('end', () => {
+        outputFiles.push(outputPath);
+        if (outputFiles.length === files.length) {
+          res.download(outputPath, randomFileName, (err) => {
+            if (err) {
+              console.error('Erro ao enviar o arquivo:', err);
+              res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
+            }
+            fs.unlinkSync(outputPath);
+            files.forEach(file => fs.unlinkSync(file.path));
+          });
+        }
+      })
+      .on('error', (err) => {
+        console.error('Erro ao converter arquivo:', err);
+        res.status(500).send({ message: 'Erro ao converter arquivos.' });
+      })
+      .save(outputPath);
   });
 };
 
-// Outras funções de manipulação de PDF
+// Conversão de imagens para PDF
 const convertImagesToPdf = async (files, res) => {
-  const { PDFDocument } = await import('pdf-lib'); // Importação dinâmica do pdf-lib
-
   const pdfDoc = await PDFDocument.create();
+
   for (const file of files) {
     const imageBytes = fs.readFileSync(file.path);
     let image;
@@ -130,11 +138,11 @@ const convertImagesToPdf = async (files, res) => {
   });
 };
 
+// Funções para manipulação de PDFs (mesclar, dividir)
 const handlePdfOperations = async (files, conversionType, res) => {
-  const { PDFDocument } = await import('pdf-lib'); // Importação dinâmica do pdf-lib
-
   if (conversionType === 'mergePdfs') {
     const mergedPdf = await PDFDocument.create();
+
     for (const file of files) {
       const pdfBytes = fs.readFileSync(file.path);
       const pdf = await PDFDocument.load(pdfBytes);
