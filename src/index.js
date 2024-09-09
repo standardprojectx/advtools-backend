@@ -5,6 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const ffmpeg = require('fluent-ffmpeg');
+
 
 const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
