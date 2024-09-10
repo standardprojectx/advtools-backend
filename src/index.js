@@ -6,11 +6,15 @@ const path = require('path');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+
+
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 
 const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
-ffmpeg.setFfmpegPath('/tmp/uploads/ffmpeg'); 
+
 
 
 const corsOptions = {
