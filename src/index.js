@@ -1,43 +1,38 @@
-const express = require('express');
-const multer = require('multer');
+const fastify = require('fastify')({ logger: true });
+const multer = require('fastify-multer');
 const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
-const cors = require('cors');
+const cors = require('fastify-cors');
 const jwt = require('jsonwebtoken');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 
-
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-
-const app = express();
 const upload = multer({ dest: '/tmp/uploads/' });
-
-
 
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
-app.use(cors(corsOptions));
+fastify.register(cors, corsOptions);
+fastify.register(multer.contentParser);
 
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-
-app.get('/', (req, res) => {
-  res.json({ message: 'Hello World AdvTools Backend' });
+fastify.get('/', async (req, res) => {
+  return { message: 'Hello World AdvTools Backend' };
 });
 
-app.get('/home', (req, res) => {
-  res.json({ message: 'Hello World AdvTools Backend Homeee' });
+fastify.get('/home', async (req, res) => {
+  return { message: 'Hello World AdvTools Backend Homeee' };
 });
 
-app.post('/convert', upload.array('files'), async (req, res) => {
+fastify.get('/login', async (req, res) => {
+  return { message: 'Hello World AdvTools Backend Login' };
+});
+
+fastify.post('/convert', { preHandler: upload.array('files') }, async (req, res) => {
   const files = req.files;
   const conversionType = req.body.conversionType;
 
@@ -182,6 +177,10 @@ const handlePdfOperations = async (files, conversionType, res) => {
   }
 };
 
-app.listen(4000, () => {
-  console.log('Servidor rodando na porta 4000');
+fastify.listen(4000, (err) => {
+  if (err) {
+    fastify.log.error(err);
+    process.exit(1);
+  }
+  fastify.log.info('Servidor rodando na porta 4000');
 });
