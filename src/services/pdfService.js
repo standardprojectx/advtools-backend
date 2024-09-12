@@ -28,5 +28,5 @@ exports.handlePdfOperations = async (files, conversionType, res) => {
       files.forEach(file => fs.unlinkSync(file.path));
     });
   }
-  // Lógica para splitPdf também pode ser adicionada aqui
+
 };
