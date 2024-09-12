@@ -1,7 +1,7 @@
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
-const { generateRandomFileName } = require('../utils/fileUtils');
+const { generateRandomFileName } = require('../utils/utils');
 
 exports.convertAudioVideo = (files, conversionType, res) => {
   const outputFiles = [];

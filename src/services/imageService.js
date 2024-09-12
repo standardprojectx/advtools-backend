@@ -1,7 +1,7 @@
 const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
-const { generateRandomFileName } = require('../utils/fileUtils');
+const { generateRandomFileName } = require('../utils/utils');
 
 exports.convertImagesToPdf = async (files, res) => {
   const pdfDoc = await PDFDocument.create();

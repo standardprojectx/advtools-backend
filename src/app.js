@@ -1,14 +1,14 @@
 const fastify = require('fastify')({ logger: true });
-const cors = require('fastify-cors');
+// const cors = require('@fastify/cors');
 const multer = require('fastify-multer');
 const path = require('path');
 
 
-fastify.register(cors, {
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-});
+// fastify.register(cors, {
+//   origin: '*',
+//   methods: ['GET', 'POST', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+// });
 
 
 
@@ -27,7 +27,7 @@ fastify.register(require('@fastify/static'), {
 });
 
 
-fastify.listen(4000, (err) => {
+fastify.listen({ port: 4000, host: '0.0.0.0' }, (err) => {
   if (err) {
     fastify.log.error(err);
     process.exit(1);
