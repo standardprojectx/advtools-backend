@@ -11,12 +11,14 @@ fastify.register(cors, {
 });
 
 
+
 fastify.register(multer.contentParser);
 
 
 fastify.register(require('./routes/audioRoutes'));
 fastify.register(require('./routes/imageRoutes'));
 fastify.register(require('./routes/pdfRoutes'));
+fastify.register(require('./routes/homeRoutes'));
 
 
 fastify.register(require('@fastify/static'), {
