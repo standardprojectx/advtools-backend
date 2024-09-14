@@ -10,11 +10,11 @@ const uploads = multer({ dest: 'uploads/' });
 
 // Register CORS plugin
 fastify.register(cors, {
-  origin: ['http://localhost:3000', 'https://advtools-frontend.vercel.app', '*'], 
+  origin: ['http://localhost:3000', 'https://advtools-frontend.vercel.app'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Disposition'], 
 });
-
 
 fastify.register(uploads.contentParser);
 

@@ -21,11 +21,13 @@ exports.convertAudio = async (req, reply) => {
     if (result.type === 'single') {
       // Verifique se o arquivo existe
       if (fs.existsSync(result.file.path)) {
+        console.log(`Enviando arquivo: ${result.file.path}`);
         reply
-        .header('Content-Type', 'application/octet-stream')
-        .header('Content-Disposition', `attachment; filename="${result.file.name}"`)
-        .send(fs.createReadStream(result.file.path));      
+          .header('Content-Type', 'application/octet-stream')
+          .header('Content-Disposition', `attachment; filename="${result.file.name}"`)
+          .send(fs.createReadStream(result.file.path));
       } else {
+        console.error(`Arquivo não encontrado: ${result.file.path}`);
         reply.status(500).send({ message: 'Arquivo não encontrado após conversão.' });
       }
     } else if (result.type === 'zip') {

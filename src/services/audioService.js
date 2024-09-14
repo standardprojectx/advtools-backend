@@ -17,12 +17,19 @@ exports.convertAudioVideo = async (files, conversionType) => {
       ffmpeg(file.path)
         .toFormat(outputExtension)
         .on('end', () => {
+          fs.stat(outputPath, (err, stats) => {
+            if (err) {
+              console.error(`Erro ao acessar o arquivo convertido: ${outputPath}`, err);
+            } else {
+              console.log(`Arquivo convertido: ${outputPath}, tamanho: ${stats.size} bytes`);
+            }
+          });
           // Remover o arquivo de entrada
           fs.unlinkSync(file.path);
           // Adicionar o arquivo de saída à lista
           outputFiles.push({ path: outputPath, name: randomFileName });
           resolve();
-        })
+        })        
         .on('error', (err) => {
           console.error('Erro ao converter arquivo:', err);
           fs.unlinkSync(file.path);
