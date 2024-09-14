@@ -1,3 +1,5 @@
+const audioService = require('../services/audioService');
+
 exports.convertAudio = async (req, reply) => {
   const files = req.files;
   const conversionType = req.body.conversionType;
