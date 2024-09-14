@@ -3,10 +3,8 @@ const multer = require('fastify-multer');
 const path = require('path');
 const { createConnection } = require('typeorm');
 
-// Importar entidades
 const User = require('./entities/User');
 
-// Importar rotas
 fastify.register(require('./routes/audioRoutes'));
 fastify.register(require('./routes/imageRoutes'));
 fastify.register(require('./routes/pdfRoutes'));
