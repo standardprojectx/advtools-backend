@@ -1,9 +1,8 @@
+
 const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
-const path = require('path');
-const { generateRandomFileName } = require('../utils/utils');
 
-exports.convertImagesToPdf = async (files, res) => {
+exports.convertImagesToPdf = async (files) => {
   const pdfDoc = await PDFDocument.create();
 
   for (const file of files) {
@@ -23,19 +22,12 @@ exports.convertImagesToPdf = async (files, res) => {
       width: image.width,
       height: image.height,
     });
+
+  
+    fs.unlinkSync(file.path);
   }
 
   const pdfBytes = await pdfDoc.save();
-  const randomFileName = generateRandomFileName('output.pdf');
-  const outputPath = path.join('/tmp', randomFileName);
-  fs.writeFileSync(outputPath, pdfBytes);
 
-  res.download(outputPath, randomFileName, (err) => {
-    if (err) {
-      console.error('Erro ao enviar o arquivo:', err);
-      res.status(500).send({ message: 'Erro ao enviar o arquivo.' });
-    }
-    fs.unlinkSync(outputPath);
-    files.forEach(file => fs.unlinkSync(file.path));
-  });
+  return pdfBytes;
 };
