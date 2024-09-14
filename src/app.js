@@ -2,21 +2,33 @@ const fastify = require('fastify')({ logger: true });
 const multer = require('fastify-multer');
 const path = require('path');
 const { createConnection } = require('typeorm');
+const cors = require('@fastify/cors');
 
 const User = require('./entities/User');
 
-fastify.register(require('./routes/audioRoutes'));
-fastify.register(require('./routes/imageRoutes'));
-fastify.register(require('./routes/pdfRoutes'));
-fastify.register(require('./routes/homeRoutes'));
-fastify.register(require('./routes/userRoutes'));
+const uploads = multer({ dest: 'uploads/' }); // Configuração do multer
+
+// Register CORS plugin
+fastify.register(cors, {
+  origin: 'http://localhost:3000', 
+});
+
+
+fastify.register(uploads.contentParser);
+
+fastify.decorate('uploads', uploads);
 
 fastify.register(require('@fastify/static'), {
   root: path.join(__dirname, '..', 'public'),
   prefix: '/public/', 
 });
 
-fastify.register(multer.contentParser);
+// Now register routes
+fastify.register(require('./routes/audioRoutes'));
+fastify.register(require('./routes/imageRoutes'));
+fastify.register(require('./routes/pdfRoutes'));
+fastify.register(require('./routes/homeRoutes'));
+fastify.register(require('./routes/userRoutes'));
 
 // Conectar ao banco de dados
 createConnection().then(() => {
