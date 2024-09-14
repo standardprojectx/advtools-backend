@@ -6,11 +6,13 @@ const cors = require('@fastify/cors');
 
 const User = require('./entities/User');
 
-const uploads = multer({ dest: 'uploads/' }); // Configuração do multer
+const uploads = multer({ dest: 'uploads/' }); 
 
 // Register CORS plugin
 fastify.register(cors, {
-  origin: 'http://localhost:3000', 
+  origin: ['http://localhost:3000', 'https://advtools-frontend.vercel.app', '*'], 
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 });
 
 
