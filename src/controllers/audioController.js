@@ -5,9 +5,9 @@ exports.convertAudio = async (req, reply) => {
   const files = req.files;
   const conversionType = req.body.conversionType;
 
+
   try {
     const result = await audioService.convertAudioVideo(files, conversionType);
-
     const cleanup = () => {
       if (result.type === 'single') {
         fs.unlinkSync(result.file.path);
@@ -19,7 +19,7 @@ exports.convertAudio = async (req, reply) => {
     reply.raw.on('finish', cleanup);
 
     if (result.type === 'single') {
-      // Verifique se o arquivo existe
+
       if (fs.existsSync(result.file.path)) {
         console.log(`Enviando arquivo: ${result.file.path}`);
         reply

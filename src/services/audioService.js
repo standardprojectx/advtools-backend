@@ -1,36 +1,32 @@
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
-const { generateRandomFileName } = require('../utils/utils');
 const archiver = require('archiver');
 
 exports.convertAudioVideo = async (files, conversionType) => {
   const outputFiles = [];
-
+  
   const conversionPromises = files.map(file => {
     return new Promise((resolve, reject) => {
       const outputExtension = conversionType.split('To')[1].toLowerCase();
       const baseName = path.parse(file.originalname).name;
-      const randomFileName = generateRandomFileName(`${baseName}.${outputExtension}`);
-      const outputPath = path.join('/tmp', randomFileName);
+      const outputFileName = `${baseName}_converted.${outputExtension}`;
+      const outputPath = path.join('/tmp', outputFileName);
 
       ffmpeg(file.path)
         .toFormat(outputExtension)
         .on('end', () => {
           fs.stat(outputPath, (err, stats) => {
-            if (err) {
-              console.error(`Erro ao acessar o arquivo convertido: ${outputPath}`, err);
-            } else {
+            if (!err) {
               console.log(`Arquivo convertido: ${outputPath}, tamanho: ${stats.size} bytes`);
             }
           });
-          // Remover o arquivo de entrada
           fs.unlinkSync(file.path);
-          // Adicionar o arquivo de saída à lista
-          outputFiles.push({ path: outputPath, name: randomFileName });
+          outputFiles.push({ path: outputPath, name: outputFileName });
           resolve();
         })        
         .on('error', (err) => {
+          
           console.error('Erro ao converter arquivo:', err);
           fs.unlinkSync(file.path);
           reject(err);
@@ -42,12 +38,14 @@ exports.convertAudioVideo = async (files, conversionType) => {
   await Promise.all(conversionPromises);
 
   if (outputFiles.length === 1) {
-    // Apenas um arquivo, retornar diretamente
+    console.log("teste")
     const outputFile = outputFiles[0];
+    console.log(outputFile)
     return { type: 'single', file: outputFile };
   } else {
-    // Múltiplos arquivos, criar um zip
-    const zipFileName = generateRandomFileName('converted_files.zip');
+    const names = outputFiles.map(file => path.parse(file.name).name);
+    const concatenatedNames = names.join('_');
+    const zipFileName = `${concatenatedNames}_converted.zip`;
     const zipFilePath = path.join('/tmp', zipFileName);
 
     return new Promise((resolve, reject) => {
@@ -57,7 +55,6 @@ exports.convertAudioVideo = async (files, conversionType) => {
       });
 
       output.on('close', () => {
-        // Remover os arquivos de saída individuais
         outputFiles.forEach(file => fs.unlinkSync(file.path));
         resolve({ type: 'zip', path: zipFilePath, name: zipFileName });
       });
