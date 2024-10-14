@@ -28,7 +28,8 @@
     "pdf-lib": "^1.17.1",
     "pg": "^8.12.0",
     "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.20"
+    "typeorm": "^0.3.20",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "ts-node": "^10.9.2",

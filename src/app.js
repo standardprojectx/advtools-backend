@@ -8,7 +8,7 @@ const User = require('./entities/User');
 
 const uploads = multer({ dest: 'uploads/' }); 
 
-// Register CORS plugin
+
 fastify.register(cors, {
   origin: ['http://localhost:3000', 'https://advtools-frontend.vercel.app'],
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -31,6 +31,9 @@ fastify.register(require('./routes/imageRoutes'));
 fastify.register(require('./routes/pdfRoutes'));
 fastify.register(require('./routes/homeRoutes'));
 fastify.register(require('./routes/userRoutes'));
+fastify.register(require('./routes/downloadRoutes'));
+
+
 
 // Conectar ao banco de dados
 createConnection().then(() => {
