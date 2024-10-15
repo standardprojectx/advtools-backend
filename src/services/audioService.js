@@ -2,16 +2,24 @@ const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
+const { v4: uuidv4 } = require('uuid');
 
-exports.convertAudioVideo = async (files, conversionType) => {
+exports.convertAudio = async (files, conversionType) => {
   const outputFiles = [];
-  
+
+  // Gera um UUID para o nome da pasta temporária
+  const uuid = uuidv4();
+
+  // Cria a pasta temporária
+  const tmpDir = path.join('tmp', uuid);
+  fs.mkdirSync(tmpDir, { recursive: true });
+
   const conversionPromises = files.map(file => {
     return new Promise((resolve, reject) => {
       const outputExtension = conversionType.split('To')[1].toLowerCase();
       const baseName = path.parse(file.originalname).name;
       const outputFileName = `${baseName}_converted.${outputExtension}`;
-      const outputPath = path.join('/tmp', outputFileName);
+      const outputPath = path.join(tmpDir, outputFileName);
 
       ffmpeg(file.path)
         .toFormat(outputExtension)
@@ -24,9 +32,8 @@ exports.convertAudioVideo = async (files, conversionType) => {
           fs.unlinkSync(file.path);
           outputFiles.push({ path: outputPath, name: outputFileName });
           resolve();
-        })        
+        })
         .on('error', (err) => {
-          
           console.error('Erro ao converter arquivo:', err);
           fs.unlinkSync(file.path);
           reject(err);
@@ -38,15 +45,13 @@ exports.convertAudioVideo = async (files, conversionType) => {
   await Promise.all(conversionPromises);
 
   if (outputFiles.length === 1) {
-    console.log("teste")
     const outputFile = outputFiles[0];
-    console.log(outputFile)
-    return { type: 'single', file: outputFile };
+    return { type: 'single', file: outputFile, uuid };
   } else {
     const names = outputFiles.map(file => path.parse(file.name).name);
     const concatenatedNames = names.join('_');
     const zipFileName = `${concatenatedNames}_converted.zip`;
-    const zipFilePath = path.join('/tmp', zipFileName);
+    const zipFilePath = path.join(tmpDir, zipFileName);
 
     return new Promise((resolve, reject) => {
       const output = fs.createWriteStream(zipFilePath);
@@ -56,7 +61,7 @@ exports.convertAudioVideo = async (files, conversionType) => {
 
       output.on('close', () => {
         outputFiles.forEach(file => fs.unlinkSync(file.path));
-        resolve({ type: 'zip', path: zipFilePath, name: zipFileName });
+        resolve({ type: 'zip', path: zipFilePath, name: zipFileName, uuid });
       });
 
       archive.on('error', (err) => {
